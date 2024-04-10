@@ -3,6 +3,7 @@ import net from 'net';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import schedule from 'node-schedule';
 
 const app = express();
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -1042,39 +1043,10 @@ app.post('/comandas/:idComanda/itens', (req, res) => {
     res.redirect(`/comandas/${idComanda}`);
 });
 
-// Rota para exportar as informações para um arquivo de texto
+// Rota para exportar dados
 app.get('/exportar', (req, res) => {
-    const data = new Date();
-    const pasta = './registros';
-    const arquivo = `registros_${data.getFullYear()}_${data.getMonth() + 1}_${data.getDate()}.txt`;
-    const caminhoCompleto = `${pasta}/${arquivo}`;
-
-    if (!fs.existsSync(pasta)) {
-        fs.mkdirSync(pasta);
-    }
-
-    let conteudo = '';
-    let totalVendido = 0;
-    let totalPorPagamento = calcularTotaisPorPagamento(comandas);
-
-    comandas.forEach(comanda => {
-        let valorTotalComanda = calcularValorTotal(comanda);
-        conteudo += `Comanda de ${comanda.nomeCliente} - Valor Total: R$ ${valorTotalComanda.toFixed(2)}\n`;
-        comanda.itens.forEach(item => {
-            conteudo += `${item.nome} (Quantidade: ${item.quantidade}) - R$ ${(item.preco * item.quantidade).toFixed(2)}\n`;
-            totalVendido += item.preco * item.quantidade;
-        });
-        conteudo += '\n';
-    });
-
-    conteudo += `Total Vendido: R$ ${totalVendido.toFixed(2)}\n`;
-    conteudo += `Total por Forma de Pagamento:\n`;
-    Object.entries(totalPorPagamento).forEach(([metodo, valor]) => {
-        conteudo += `${metodo}: R$ ${valor.toFixed(2)}\n`;
-    });
-
-    fs.writeFileSync(caminhoCompleto, conteudo);
-    res.json({ success: true, message: `Dados exportados com sucesso para '${caminhoCompleto}'` });
+    const message = realizarExportacao();
+    res.json({ success: true, message });
 });
 
 // Rota para alterar o nome de uma comanda
@@ -1227,5 +1199,44 @@ function escreverItens(itens) {
     const conteudo = itens.map(item => `${item.nome},${item.preco}`).join('\n');
     fs.writeFileSync(arquivoItens, conteudo, 'utf-8');
 }
+
+function realizarExportacao() {
+    const data = new Date();
+    const pasta = './registros';
+    const arquivo = `registros_${data.getFullYear()}_${data.getMonth() + 1}_${data.getDate()}.txt`;
+    const caminhoCompleto = `${pasta}/${arquivo}`;
+
+    if (!fs.existsSync(pasta)) {
+        fs.mkdirSync(pasta);
+    }
+
+    let conteudo = '';
+    let totalVendido = 0;
+    let totalPorPagamento = calcularTotaisPorPagamento(comandas);
+
+    comandas.forEach(comanda => {
+        let valorTotalComanda = calcularValorTotal(comanda);
+        conteudo += `Comanda de ${comanda.nomeCliente} - Valor Total: R$ ${valorTotalComanda.toFixed(2)}\n`;
+        comanda.itens.forEach(item => {
+            conteudo += `${item.nome} (Quantidade: ${item.quantidade}) - R$ ${(item.preco * item.quantidade).toFixed(2)}\n`;
+            totalVendido += item.preco * item.quantidade;
+        });
+        conteudo += '\n';
+    });
+
+    conteudo += `Total Vendido: R$ ${totalVendido.toFixed(2)}\n`;
+    conteudo += `Total por Forma de Pagamento:\n`;
+    Object.entries(totalPorPagamento).forEach(([metodo, valor]) => {
+        conteudo += `${metodo}: R$ ${valor.toFixed(2)}\n`;
+    });
+
+    fs.writeFileSync(caminhoCompleto, conteudo);
+    return `Dados exportados com sucesso para '${caminhoCompleto}'`;
+}
+
+// Agendamento usando node-schedule
+schedule.scheduleJob('*/30 * * * *', () => {
+    const resultado = realizarExportacao();
+});
 
 export { app, startServer };
