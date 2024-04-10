@@ -1,0 +1,9 @@
+Comanda de eduardo - Rachada em 3x - Valor Total: R$ 30.00
+Hambúrguer (Quantidade: 2) - R$ 30.00
+
+Total Vendido: R$ 30.00
+Total por Forma de Pagamento:
+Dinheiro: R$ 5.00
+PIX: R$ 15.00
+Crédito: R$ 10.00
+Débito: R$ 0.00
