@@ -1201,7 +1201,12 @@ function escreverItens(itens) {
 }
 
 function realizarExportacao() {
-    const data = new Date();
+    // Se a hora atual for antes das 4 da manhã, considere como o dia anterior
+    if (data.getHours() < 4) {
+        data.setDate(data.getDate() - 1); // Subtrai um dia
+    }
+    console.log(data)
+
     const pasta = './registros';
     const arquivo = `registros_${data.getFullYear()}_${data.getMonth() + 1}_${data.getDate()}.txt`;
     const caminhoCompleto = `${pasta}/${arquivo}`;
@@ -1237,7 +1242,6 @@ function realizarExportacao() {
 // Agendamento usando node-schedule
 schedule.scheduleJob('*/30 * * * *', () => {
     const resultado = realizarExportacao();
-    console.log(resultado);
 });
 
 export { app, startServer };
