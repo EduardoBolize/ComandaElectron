@@ -1205,7 +1205,6 @@ function realizarExportacao() {
     if (data.getHours() < 4) {
         data.setDate(data.getDate() - 1); // Subtrai um dia
     }
-    console.log(data)
 
     const pasta = './registros';
     const arquivo = `registros_${data.getFullYear()}_${data.getMonth() + 1}_${data.getDate()}.txt`;
