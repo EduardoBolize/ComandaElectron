@@ -408,52 +408,66 @@ app.get('/comandas/:idComanda/rachar', (req, res) => {
     }
 
     const valorTotal = calcularValorTotal(comanda);
-    const valorPago = comanda.pagamentos ? comanda.pagamentos.reduce((total, pagamento) => total + pagamento.valor, 0) : 0;
+    const valorPago = comanda.pagamentos.reduce((total, pagamento) => total + pagamento.valor, 0);
     const valorRestante = valorTotal - valorPago;
 
-    if (valorPago >= valorTotal) {
-        res.send(`
-            <style>
-                body { font-family: 'Roboto', sans-serif; text-align: center; background: #e0e0e0; color: #333; padding: 20px; }
-                .modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5); display: flex; justify-content: center; align-items: center; }
-                .modal-content { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); width: 80%; max-width: 500px; }
-                button { background-color: #4CAF50; color: white; padding: 10px 20px; border: none; border-radius: 4px; cursor: pointer; transition: background-color 0.3s; width: 100%; }
-                button:hover { background-color: #45a049; }
-            </style>
-            <div class="modal">
+    res.send(`
+        <style>
+            body, input, button, select {
+                font-family: 'Roboto', sans-serif;
+            }
+            .container {
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                padding: 20px;
+            }
+            .modal-content {
+                background-color: white;
+                padding: 20px;
+                border-radius: 8px;
+                box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+                width: 100%;
+                max-width: 500px;
+                margin-bottom: 20px;
+            }
+            button {
+                background-color: #4CAF50;
+                color: white;
+                padding: 10px 20px;
+                border: none;
+                border-radius: 4px;
+                cursor: pointer;
+                transition: background-color 0.3s;
+                width: 100%;
+            }
+            button:hover {
+                background-color: #45a049;
+            }
+        </style>
+        <div class="container">
+            ${valorPago >= valorTotal ? `
                 <div class="modal-content">
                     <h1>Conta já foi totalmente paga</h1>
                     <p>O total da conta foi R$${valorTotal.toFixed(2)}, e já foi completamente quitado.</p>
                     <button onclick="window.location.href='/'">Voltar</button>
-                </div>
-            </div>
-        `);
-        return;
-    }
-
-    res.send(`
-        <style>
-            body { font-family: 'Roboto', sans-serif; text-align: center; background: #e0e0e0; color: #333; padding: 20px; }
-            h1 { color: #4CAF50; margin-bottom: 20px; }
-            p { font-size: 16px; color: #555; }
-            form { background: #ffffff; padding: 20px; border-radius: 8px; display: inline-block; border: 1px solid #ccc; box-shadow: 0 2px 5px rgba(0,0,0,0.1); margin-top: 20px; }
-            label, input[type="number"], select, button { display: block; width: 100%; padding: 8px; margin-bottom: 10px; }
-            button { background-color: #4CAF50; color: white; border: none; border-radius: 4px; cursor: pointer; transition: background-color 0.3s; }
-            button:hover { background-color: #45a049; }
-        </style>
-        <h1>Rachar Conta</h1>
-        <p>Total da conta: R$ ${valorTotal.toFixed(2)}</p>
-        <p>Valor já pago: R$ ${valorPago.toFixed(2)}</p>
-        <p>Valor restante: R$ ${valorRestante.toFixed(2)}</p>
-        <form action="/comandas/${idComanda}/pagar" method="post">
-            <label for="valorPagar">Valor a Pagar:</label>
-            <input type="number" name="valorPagar" id="valorPagar" min="0.01" max="${valorRestante.toFixed(2)}" step="0.01" required>
-            <label for="metodoPagamento">Forma de Pagamento:</label>
-            <select name="metodoPagamento" id="metodoPagamento">
-                ${/* Supondo que pagamentoOptions é uma variável definida previamente com as opções de pagamento */ pagamentoOptions}
-            </select>
-            <button type="submit">Pagar</button>
-        </form>
+                </div>` : `
+                <div class="modal-content">
+                    <h1>Rachar Conta</h1>
+                    <p>Total da conta: R$ ${valorTotal.toFixed(2)}</p>
+                    <p>Valor já pago: R$ ${valorPago.toFixed(2)}</p>
+                    <p>Valor restante: R$ ${valorRestante.toFixed(2)}</p>
+                    <form action="/comandas/${idComanda}/pagar" method="post">
+                        <input type="number" name="valorPagar" min="0.01" max="${valorRestante.toFixed(2)}" step="0.01" required>
+                        <select name="metodoPagamento">
+                            ${pagamentoOptions}
+                        </select>
+                        <button type="submit">Pagar</button>
+                    </form>
+                    <button onclick="window.location.href='/'">Voltar Sem Rachar</button>
+                </div>`
+            }
+        </div>
     `);
 });
 
@@ -659,7 +673,7 @@ app.get('/comandas/:idComanda', (req, res) => {
                     </select>
                     <input type="text" name="novoNomeItem" id="novoNomeItem" placeholder="Nome do item" style="display:none;">
                     <input type="number" name="quantidade" id="quantidade" value="1" min="1">
-                    <input type="number" name="preco" id="preco" placeholder="Preço" style="display:none;">
+                    <input type="number" name="preco" id="preco" placeholder="Preço" step="0.01" required style="display:none;">
                     <button type="submit">Adicionar Item</button>
                 </form>
             </div>
@@ -759,12 +773,18 @@ app.get('/comandas/:idComanda', (req, res) => {
             
 
             function mostrarCampos(select) {
-                const novoNomeItemInput = document.getElementById('novoNomeItem');
-                const precoInput = document.getElementById('preco');
-                novoNomeItemInput.style.display = select.value === 'Outro' ? 'inline-block' : 'none';
-                precoInput.style.display = select.value === 'Outro' ? 'inline-block' : 'none';
-                if (select.value !== 'Outro') {
-                    document.getElementById('novoNomeItem').value = select.value;
+                const outroCampo = document.getElementById('novoNomeItem');
+                const precoCampo = document.getElementById('preco');
+                if (select.value === 'Outro') {
+                    outroCampo.style.display = 'block';
+                    precoCampo.style.display = 'block';
+                    outroCampo.value = ''; // Clear previous input
+                    precoCampo.value = ''; // Clear previous input
+                } else {
+                    outroCampo.style.display = 'none';
+                    precoCampo.style.display = 'none';
+                    const selectedItem = select.options[select.selectedIndex];
+                    precoCampo.value = selectedItem.getAttribute('data-preco'); // Set to the selected item's price
                 }
             }
         </script>
@@ -993,53 +1013,37 @@ app.post('/comandas/:idComanda/reabrir', (req, res) => {
 app.post('/comandas/:idComanda/itens', (req, res) => {
     const { idComanda } = req.params;
     const { nomeItem, novoNomeItem, quantidade, preco } = req.body;
+    let nome = nomeItem === 'Outro' ? novoNomeItem.trim() : nomeItem;
+    let itemPreco = parseFloat(preco);
 
-    let nome = nomeItem;
-    let itemPreco = parseFloat(preco); // Preço vem diretamente do campo de entrada se 'Outro' for selecionado
-
-    // Carregar itens do arquivo TXT
-    const itens = lerItens();
-
-    // Verificar se o item é "Outro" ou um dos itens pré-definidos
-    if (nomeItem !== 'Outro') {
-        const itemSelecionado = itens.find(item => item.nome === nomeItem);
-        if (!itemSelecionado) {
-            return res.status(400).send('Item não encontrado');
-        }
-        nome = itemSelecionado.nome; // Garantir que o nome esteja correto conforme a lista
-        itemPreco = itemSelecionado.preco; // Usar o preço do item selecionado
+    if (nomeItem === 'Outro' && (isNaN(itemPreco) || itemPreco <= 0)) {
+        res.send(`<script>
+            alert('Preço inválido. Insira um valor maior que zero.');
+            window.history.back();
+        </script>`);
+        return;
     }
 
-    // Validar a quantidade
-    const itemQuantidade = parseInt(quantidade);
-    if (isNaN(itemQuantidade) || itemQuantidade <= 0) {
-        return res.status(400).send('Quantidade inválida');
-    }
-
-    // Validar o preço
-    if (!itemPreco || isNaN(itemPreco) || itemPreco <= 0) {
-        return res.status(400).send('Preço inválido');
-    }
-
-    // Encontrar a comanda correspondente pelo ID
     const comanda = comandas.find(comanda => comanda.id === idComanda);
     if (!comanda) {
         return res.status(404).send('Comanda não encontrada');
     }
 
-    // Criar um novo item com id único
     const item = {
         id: Date.now().toString(),
         nome,
-        quantidade: itemQuantidade,
-        preco: itemPreco,
-        total: itemPreco * itemQuantidade
+        quantidade: parseInt(quantidade, 10),
+        preco: itemPreco
     };
 
-    // Adicionar o novo item à lista de itens da comanda
     comanda.itens.push(item);
 
-    // Redirecionar de volta para a página da comanda
+    if (nomeItem === 'Outro') {
+        const itens = lerItens();
+        itens.push({ nome, preco: itemPreco });
+        escreverItens(itens);
+    }
+
     res.redirect(`/comandas/${idComanda}`);
 });
 
