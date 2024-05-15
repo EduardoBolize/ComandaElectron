@@ -288,6 +288,14 @@ app.get('/', (req, res) => {
         <p>Gerencie as comandas e itens aqui.</p>
             <a href="/gerenciar-itens"><button class="action-button">Gestão de Itens</button></a>
         <script>
+            document.addEventListener('DOMContentLoaded', function() {
+                const inputs = document.querySelectorAll('input, button');
+                inputs.forEach(input => {
+                    input.addEventListener('click', function() {
+                        this.focus();
+                    });
+                });
+            });
             // Pega o modal
             var modal = document.getElementById('myModal');
 
@@ -669,6 +677,7 @@ app.get('/comandas/:idComanda', (req, res) => {
                 <h2>Adicionar Item</h2>
                 <form action="/comandas/${idComanda}/itens" method="post">
                     <select name="nomeItem" id="nomeItem" onchange="mostrarCampos(this)">
+                        <option value="">Selecione um item</option>
                         ${options}
                     </select>
                     <input type="text" name="novoNomeItem" id="novoNomeItem" placeholder="Nome do item" style="display:none;">
@@ -699,6 +708,14 @@ app.get('/comandas/:idComanda', (req, res) => {
         <br>
         <a href="/" class="comanda-link">Voltar para lista de comandas</a>
         <script>
+            document.addEventListener('DOMContentLoaded', function() {
+                const inputs = document.querySelectorAll('input, button');
+                inputs.forEach(input => {
+                    input.addEventListener('click', function() {
+                        this.focus();
+                    });
+                });
+            });
             function updateItemQuantity(comandaId, itemId, increment) {
                 const quantityDisplay = document.getElementById('quantity-' + itemId);
                 let newQuantity = parseInt(quantityDisplay.textContent) + increment; // Usando textContent para pegar apenas o texto
@@ -904,6 +921,14 @@ app.get('/gerenciar-itens', (req, res) => {
         </div>
         <button class="back-button" onclick="window.location.href='/'">Voltar para a Tela Inicial</button>
         <script>
+            document.addEventListener('DOMContentLoaded', function() {
+                const inputs = document.querySelectorAll('input, button');
+                inputs.forEach(input => {
+                    input.addEventListener('click', function() {
+                        this.focus();
+                    });
+                });
+            });
             let currentItem = {};
 
             function onSelectItemChange() {
@@ -1015,6 +1040,11 @@ app.post('/comandas/:idComanda/itens', (req, res) => {
     const { nomeItem, novoNomeItem, quantidade, preco } = req.body;
     let nome = nomeItem === 'Outro' ? novoNomeItem.trim() : nomeItem;
     let itemPreco = parseFloat(preco);
+
+    // Ignorar se o item selecionado for o placeholder
+    if (nomeItem === "") {
+        return res.redirect('/'); // Ou outra lógica adequada
+    }
 
     if (nomeItem === 'Outro' && (isNaN(itemPreco) || itemPreco <= 0)) {
         res.send(`<script>
@@ -1216,7 +1246,6 @@ function realizarExportacao() {
 
     let conteudo = '';
     let totalVendido = 0;
-    let totalPorPagamento = calcularTotaisPorPagamento(comandas);
 
     comandas.forEach(comanda => {
         let valorTotalComanda = calcularValorTotal(comanda);
@@ -1225,9 +1254,17 @@ function realizarExportacao() {
             conteudo += `${item.nome} (Quantidade: ${item.quantidade}) - R$ ${(item.preco * item.quantidade).toFixed(2)}\n`;
             totalVendido += item.preco * item.quantidade;
         });
+        
+        // Adicionando detalhes dos pagamentos
+        conteudo += 'Pagamentos:\n';
+        comanda.pagamentos.forEach(pagamento => {
+            conteudo += `  ${pagamento.metodo}: R$ ${pagamento.valor.toFixed(2)}\n`;
+        });
         conteudo += '\n';
     });
 
+    // Adicionando um resumo de totais por forma de pagamento
+    let totalPorPagamento = calcularTotaisPorPagamento(comandas);
     conteudo += `Total Vendido: R$ ${totalVendido.toFixed(2)}\n`;
     conteudo += `Total por Forma de Pagamento:\n`;
     Object.entries(totalPorPagamento).forEach(([metodo, valor]) => {

@@ -3,12 +3,8 @@ import { app as expressApp, startServer } from './server.js';
 
 let mainWindow;
 
-const isWindows = process.platform === 'win32';
-let needsFocusFix = false;
-let triggeringProgrammaticBlur = false;
-
 async function createWindow() {
-    const port = await startServer(); // Garante que a porta seja obtida antes de usar
+    const port = await startServer();
 
     mainWindow = new BrowserWindow({
         width: 1280,
@@ -22,23 +18,16 @@ async function createWindow() {
 
     mainWindow.once('ready-to-show', () => {
         mainWindow.show();
+        mainWindow.focus();
     });
-
-    mainWindow.on('blur', (event) => {
-        if(!triggeringProgrammaticBlur) {
-          needsFocusFix = true;
-        }
-    })
 
     mainWindow.maximize();
     mainWindow.loadURL(`http://localhost:${port}/`);
-
-    mainWindow.on('focus', () => mainWindow.webContents.focus());
 }
 
-electronApp.on('browser-window-focus', function(event, win) {
+electronApp.on('browser-window-focus', (event, win) => {
     if (win) {
-        win.webContents.send('window-focus');
+        win.webContents.focus();
     }
 });
 
